@@ -6,14 +6,14 @@ from django.contrib.auth.models import (
 class Player(models.Model):
     state = models.IntegerField(default=0)
 
-    def __str__(self):
+    def __unicode__(self):
         return '#%d' % self.pk
 
 
 class Abstract(models.Model):
     name = models.CharField(max_length=255)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     class Meta:

@@ -50,7 +50,7 @@ class Follow(models.Model):
     class Meta:
         unique_together = ('user', 'content_type', 'object_id', 'flag')
 
-    def __str__(self):
+    def __unicode__(self):
         return '%s -> %s : %s' % (self.user, self.follow_object, self.flag)
 
 
@@ -128,7 +128,7 @@ class Action(models.Model):
     class Meta:
         ordering = ('-timestamp',)
 
-    def __str__(self):
+    def __unicode__(self):
         ctx = {
             'actor': self.actor,
             'verb': self.verb,
