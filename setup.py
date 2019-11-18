@@ -1,7 +1,7 @@
 from distutils.core import setup
 from actstream import __version__
 
-setup(name='django-activity-stream',
+setup(name='geonode-django-activity-stream',
       version=__version__,
       description='Generate generic activity streams from the actions on your '
       'site. Users can follow any actors\' activities for personalized streams.',
