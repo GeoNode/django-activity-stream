@@ -1,4 +1,7 @@
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 from actstream import __version__
 
 setup(name='geonode-django-activity-stream',
@@ -9,7 +12,7 @@ setup(name='geonode-django-activity-stream',
       author='Justin Quick',
       license='BSD 3-Clause',
       author_email='justquick@gmail.com',
-      url='http://github.com/justquick/django-activity-stream',
+      url='https://github.com/GeoNode/django-activity-stream',
       packages=['actstream',
                 'actstream.migrations',
                 'actstream.templatetags',
@@ -26,4 +29,7 @@ setup(name='geonode-django-activity-stream',
                    'Programming Language :: Python',
                    'Programming Language :: Python :: 3',
                    'Topic :: Utilities'],
+      extras_require={
+          'jsonfield': ['django-jsonfield-backport>=1.0.2,<2.0'],
+      },
       )

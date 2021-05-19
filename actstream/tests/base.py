@@ -5,17 +5,12 @@ from inspect import getargspec
 from django.apps import apps
 from django.test import TestCase
 from django.template import Template, Context
-from django.utils.six import text_type
 from django.utils.timesince import timesince
 from django.contrib.sites.models import Site
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-
-try:
-    from django.core.urlresolvers import reverse
-except ImportError:
-    from django.urls import reverse
+from django.urls import reverse
 
 from actstream.models import Action, Follow
 from actstream.registry import register, unregister
@@ -53,12 +48,12 @@ class ActivityBaseTestCase(TestCase):
 
     def assertSetEqual(self, l1, l2, msg=None, domap=True):
         if domap:
-            l1 = map(text_type, l1)
+            l1 = map(str, l1)
         self.assertSequenceEqual(set(l1), set(l2), msg)
 
-    def assertAllIn(self, bits, string):
+    def assertAllIn(self, bits, obj):
         for bit in bits:
-            self.assertIn(bit, string)
+            self.assertIn(bit, str(obj))
 
     def assertJSON(self, string):
         return loads(string)
@@ -72,8 +67,8 @@ class ActivityBaseTestCase(TestCase):
         Follow.objects.all().delete()
         self.User.objects.all().delete()
 
-    def capture(self, viewname, *args):
-        response = self.client.get(reverse(viewname, args=args))
+    def capture(self, viewname, *args, query_string=''):
+        response = self.client.get('{}?{}'.format(reverse(viewname, args=args),query_string))
         content = response.content.decode()
         if response['Content-Type'] == 'application/json':
             return loads(content)

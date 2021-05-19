@@ -6,21 +6,16 @@ from django.utils.feedgenerator import Atom1Feed, rfc3339_date
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.syndication.views import Feed, add_domain
 from django.contrib.sites.models import Site
-from django.utils.encoding import force_text
-from django.utils.six import text_type
+from django.utils.encoding import force_str
 from django.utils import datetime_safe
 from django.views.generic import View
 from django.http import HttpResponse, Http404
-
-try:
-    from django.core.urlresolvers import reverse
-except ImportError:
-    from django.urls import reverse
+from django.urls import reverse
 
 from actstream.models import Action, model_stream, user_stream, any_stream
 
 
-class AbstractActivityStream(object):
+class AbstractActivityStream:
     """
     Abstract base class for all stream rendering.
     Supports hooks for fetching streams and formatting actions.
@@ -29,7 +24,7 @@ class AbstractActivityStream(object):
         """
         Returns a stream method to use.
         """
-        raise NotImplementedError
+        raise NotImplementedError   
 
     def get_object(self, *args, **kwargs):
         """
@@ -50,7 +45,7 @@ class AbstractActivityStream(object):
         if date is None:
             date = action.timestamp
         date = datetime_safe.new_datetime(date).strftime('%Y-%m-%d')
-        return 'tag:%s,%s:%s' % (Site.objects.get_current().domain, date,
+        return 'tag:{},{}:{}'.format(Site.objects.get_current().domain, date,
                                  self.get_url(action, obj, False))
 
     def get_url(self, action, obj=None, domain=True):
@@ -79,7 +74,7 @@ class AbstractActivityStream(object):
             'verb': action.verb,
             'published': rfc3339_date(action.timestamp),
             'actor': self.format_actor(action),
-            'title': text_type(action),
+            'title': str(action),
         }
         if action.description:
             item['content'] = action.description
@@ -98,7 +93,7 @@ class AbstractActivityStream(object):
             'id': self.get_uri(action, obj),
             'url': self.get_url(action, obj),
             'objectType': ContentType.objects.get_for_model(obj).name,
-            'displayName': text_type(obj)
+            'displayName': str(obj)
         }
 
     def format_actor(self, action):
@@ -203,7 +198,7 @@ class ActivityStreamsBaseFeed(AbstractActivityStream, Feed):
 
     def item_description(self, action):
         if action.description:
-            return force_text(action.description)
+            return force_str(action.description)
 
     def items(self, obj):
         return self.get_stream()(obj)[:30]
@@ -225,7 +220,7 @@ class JSONActivityFeed(AbstractActivityStream, View):
         }, indent=4 if 'pretty' in request.GET or 'pretty' in request.POST else None)
 
 
-class ModelActivityMixin(object):
+class ModelActivityMixin:
 
     def get_object(self, request, content_type_id):
         return get_object_or_404(ContentType, pk=content_type_id).model_class()
@@ -234,7 +229,7 @@ class ModelActivityMixin(object):
         return model_stream
 
 
-class ObjectActivityMixin(object):
+class ObjectActivityMixin:
 
     def get_object(self, request, content_type_id, object_id):
         ct = get_object_or_404(ContentType, pk=content_type_id)
@@ -247,8 +242,13 @@ class ObjectActivityMixin(object):
     def get_stream(self):
         return any_stream
 
+class StreamKwargsMixin:
+        
+    def items(self, request, *args, **kwargs):
+        return self.get_stream()(self.get_object(request, *args, **kwargs),**self.get_stream_kwargs(request))
+    
 
-class UserActivityMixin(object):
+class UserActivityMixin:
 
     def get_object(self, request):
         if request.user.is_authenticated:
@@ -257,8 +257,13 @@ class UserActivityMixin(object):
     def get_stream(self):
         return user_stream
 
+    def get_stream_kwargs(self, request):
+        stream_kwargs = {}
+        if 'with_user_activity' in request.GET:
+            stream_kwargs['with_user_activity'] = request.GET['with_user_activity'].lower() == 'true'
+        return stream_kwargs
 
-class CustomStreamMixin(object):
+class CustomStreamMixin:
     name = None
 
     def get_object(self):
@@ -336,7 +341,7 @@ class AtomObjectActivityFeed(ObjectActivityFeed):
     subtitle = ObjectActivityFeed.description
 
 
-class UserJSONActivityFeed(UserActivityMixin, JSONActivityFeed):
+class UserJSONActivityFeed(UserActivityMixin, StreamKwargsMixin, JSONActivityFeed):
     """
     JSON feed of Activity for a given user (where actions are those that the given user follows).
     """
